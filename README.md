@@ -35,7 +35,7 @@ Please cite our paper if you find this repository helpful in your research:
 
 ## Preparations and Configurations
 ### Pre-trained Model and Data
-We use the vocab file and pre-trained ST model provided by [Fairseq S2T MuST-C Example](https://github.com/pytorch/fairseq/blob/main/examples/speech_to_text/docs/mustc_example.md).
+We use the vocab file and pre-trained ST model provided by [Fairseq S2T MuST-C Example](https://github.com/pytorch/fairseq/blob/main/examples/speech_to_text/docs/mustc_example.md). 
 
 #### TSV Data
 
@@ -89,7 +89,7 @@ For multilingual experiments, you need to add a new parameter `prepend_tgt_lang_
 
 ## Unifying Text and Speech Representation
 
-We input parallel $\langle speech, translation\rangle$  and $\langle speech, transcription\rangle$  into the model to unify text adn speech representation on the decoder side. 
+We input parallel $\langle speech, translation\rangle$  and $\langle speech, transcription\rangle$  into the model to unify text adn speech representation on the decoder side. For convenience, we also provide the well trained  [model](https://drive.google.com/drive/folders/1Ds394y26IifaBXEfA3g2rlrpne-o0qTd?usp=sharing).
 
 Trianing Bilingual Model on MuST-C Corpus:
 ```bash
