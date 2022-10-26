@@ -2,6 +2,10 @@
 
 wav2vec 2.0 learns speech representations on unlabeled data as described in [wav2vec 2.0: A Framework for Self-Supervised Learning of Speech Representations (Baevski et al., 2020)](https://arxiv.org/abs/2006.11477).
 
+We learned speech representations in multiple languages as well in [Unsupervised Cross-lingual Representation Learning for Speech Recognition (Conneau et al., 2020)](https://arxiv.org/abs/2006.13979).
+
+We also combined wav2vec 2.0 with self-training in [Self-training and Pre-training are Complementary for Speech Recognition (Xu et al., 2020)](https://arxiv.org/abs/2010.11430).
+
 ## Pre-trained models
 
 Model | Finetuning split | Dataset | Model
@@ -14,10 +18,30 @@ Wav2Vec 2.0 Large | No finetuning | [Librispeech](http://www.openslr.org/12)  | 
 Wav2Vec 2.0 Large | 10 minutes | [Librispeech](http://www.openslr.org/12)  | [download](https://dl.fbaipublicfiles.com/fairseq/wav2vec/wav2vec_big_10m.pt)
 Wav2Vec 2.0 Large | 100 hours | [Librispeech](http://www.openslr.org/12)  | [download](https://dl.fbaipublicfiles.com/fairseq/wav2vec/wav2vec_big_100h.pt)
 Wav2Vec 2.0 Large | 960 hours | [Librispeech](http://www.openslr.org/12)  | [download](https://dl.fbaipublicfiles.com/fairseq/wav2vec/wav2vec_big_960h.pt)
-Wav2Vec 2.0 Large (LV-60) | No finetuning | [Libri-Light](https://github.com/facebookresearch/libri-light) | [download](https://dl.fbaipublicfiles.com/fairseq/wav2vec/wav2vec_vox.pt)
-Wav2Vec 2.0 Large (LV-60) | 10 minutes | [Libri-Light](https://github.com/facebookresearch/libri-light) + [Librispeech](http://www.openslr.org/12) | [download](https://dl.fbaipublicfiles.com/fairseq/wav2vec/wav2vec_vox_10m.pt)
-Wav2Vec 2.0 Large (LV-60) | 100 hours | [Libri-Light](https://github.com/facebookresearch/libri-light) + [Librispeech](http://www.openslr.org/12) | [download](https://dl.fbaipublicfiles.com/fairseq/wav2vec/wav2vec_vox_100h.pt)
-Wav2Vec 2.0 Large (LV-60) | 960 hours | [Libri-Light](https://github.com/facebookresearch/libri-light) + [Librispeech](http://www.openslr.org/12) | [download](https://dl.fbaipublicfiles.com/fairseq/wav2vec/wav2vec2_vox_960h.pt)
+Wav2Vec 2.0 Large (LV-60)* | No finetuning | [Libri-Light](https://github.com/facebookresearch/libri-light) | [download](https://dl.fbaipublicfiles.com/fairseq/wav2vec/wav2vec_vox_new.pt)
+Wav2Vec 2.0 Large (LV-60)* | 10 minutes | [Libri-Light](https://github.com/facebookresearch/libri-light) + [Librispeech](http://www.openslr.org/12) | [download](https://dl.fbaipublicfiles.com/fairseq/wav2vec/wav2vec_vox_10m_new.pt)
+Wav2Vec 2.0 Large (LV-60)* | 100 hours | [Libri-Light](https://github.com/facebookresearch/libri-light) + [Librispeech](http://www.openslr.org/12) | [download](https://dl.fbaipublicfiles.com/fairseq/wav2vec/wav2vec_vox_100h_new.pt)
+Wav2Vec 2.0 Large (LV-60)* | 960 hours | [Libri-Light](https://github.com/facebookresearch/libri-light) + [Librispeech](http://www.openslr.org/12) | [download](https://dl.fbaipublicfiles.com/fairseq/wav2vec/wav2vec2_vox_960h_new.pt)
+Wav2Vec 2.0 Large (LV-60) + Self Training * | 10 minutes | [Libri-Light](https://github.com/facebookresearch/libri-light) + [Librispeech](http://www.openslr.org/12) | [download](https://dl.fbaipublicfiles.com/fairseq/wav2vec/wav2vec_vox_10m_pl.pt)
+Wav2Vec 2.0 Large (LV-60) + Self Training * | 100 hours | [Libri-Light](https://github.com/facebookresearch/libri-light) + [Librispeech](http://www.openslr.org/12) | [download](https://dl.fbaipublicfiles.com/fairseq/wav2vec/wav2vec_vox_100h_pl.pt)
+Wav2Vec 2.0 Large (LV-60) + Self Training * | 960 hours | [Libri-Light](https://github.com/facebookresearch/libri-light) + [Librispeech](http://www.openslr.org/12) | [download](https://dl.fbaipublicfiles.com/fairseq/wav2vec/wav2vec_vox_960h_pl.pt)
+
+\* updated (Oct. 24, 2020)
+
+We also release multilingual pre-trained wav2vec 2.0 (XLSR) models:
+
+Model | Architecture | Hours | Languages | Datasets | Model
+|---|---|---|---|---|---
+XLSR-53 | Large | 56k | 53 | MLS, CommonVoice, BABEL | [download](https://dl.fbaipublicfiles.com/fairseq/wav2vec/xlsr_53_56k.pt)
+
+The XLSR model uses the following datasets for multilingual pretraining:
+
+* **[MLS: Multilingual LibriSpeech](https://indico2.conference4me.psnc.pl/event/35/contributions/3585/attachments/1060/1101/Wed-2-6-10.pdf)** (8 languages, 50.7k hours): *Dutch, English, French, German, Italian, Polish, Portuguese, Spanish*
+
+* **[CommonVoice](https://commonvoice.mozilla.org/en/languages)** (36 languages, 3.6k hours): *Arabic, Basque, Breton, Chinese (CN), Chinese (HK), Chinese (TW), Chuvash, Dhivehi, Dutch, English, Esperanto, Estonian, French, German, Hakh-Chin, Indonesian, Interlingua, Irish, Italian, Japanese, Kabyle, Kinyarwanda, Kyrgyz, Latvian, Mongolian, Persian, Portuguese, Russian, Sakha, Slovenian, Spanish, Swedish, Tamil, Tatar, Turkish, Welsh* (see also [finetuning splits]([https://dl.fbaipublicfiles.com/cpc_audio/common_voices_splits.tar.gz]) from [this paper](https://arxiv.org/abs/2002.02848)).
+
+* **[Babel](https://catalog.ldc.upenn.edu/byyear)** (17 languages, 1.7k hours): *Assamese, Bengali, Cantonese, Cebuano, Georgian, Haitian, Kazakh, Kurmanji, Lao, Pashto, Swahili, Tagalog, Tamil, Tok, Turkish, Vietnamese, Zulu*
+
 
 ## Training a new model with the CLI tools
 
@@ -46,44 +70,31 @@ separately pre-processed manifest file.
 
 This configuration was used for the base model trained on the Librispeech dataset in the wav2vec 2.0 paper
 
-Note that this was tested with pytorch 1.4.0 and the input is expected to be single channel, sampled at 16 kHz
+Note that the input is expected to be single channel, sampled at 16 kHz
 
 ```shell script
-$ python train.py --distributed-world-size 64 --distributed-port $PORT /manifest/path \
---save-dir /model/path --fp16 --num-workers 6 --task audio_pretraining --criterion wav2vec --arch wav2vec2 \
---log-keys '["prob_perplexity","code_perplexity","temp"]' --quantize-targets --extractor-mode default \
---conv-feature-layers '[(512, 10, 5)] + [(512, 3, 2)] * 4 + [(512,2,2)] * 2' --final-dim 256 --latent-vars 320 \
---latent-groups 2 --latent-temp '(2,0.5,0.999995)' --infonce --optimizer adam \
---adam-betas '(0.9,0.98)' --adam-eps 1e-06 --lr-scheduler polynomial_decay --total-num-update 400000 \
---lr 0.0005 --warmup-updates 32000 --mask-length 10 --mask-prob 0.65 --mask-selection static --mask-other 0 \
---encoder-layerdrop 0.05 --dropout-input 0.1 --dropout-features 0.1 --feature-grad-mult 0.1 \
---loss-weights '[0.1, 10]' --conv-pos 128 --conv-pos-groups 16 --num-negatives 100 --cross-sample-negatives 0 \
---max-sample-size 250000 --min-sample-size 32000 --dropout 0.1 --attention-dropout 0.1 --weight-decay 0.01 \
---max-tokens 1400000 --max-update 400000 --skip-invalid-size-inputs-valid-test --ddp-backend no_c10d
+$ fairseq-hydra-train \
+    task.data=/path/to/data \
+    --config-dir /path/to/fairseq-py/examples/wav2vec/config/pretraining \
+    --config-name wav2vec2_base_librispeech
 ```
 
-Note: you can simulate 64 GPUs by using k GPUs and setting --update-freq 64/k
+Note: you can simulate 64 GPUs by using k GPUs and adding command line parameters (before `--config-dir`)
+`distributed_training.distributed_world_size=k` `+optimization.update_freq='[x]'` where x = 64/k
 
 ### Train a wav2vec 2.0 large model:
 
 This configuration was used for the large model trained on the Libri-light dataset in the wav2vec 2.0 paper
 
 ```shell script
-$ python train.py --distributed-world-size 128 --distributed-port $PORT /manifest/path \
---save-dir /model/path --fp16 --num-workers 6 --task audio_pretraining --criterion wav2vec --arch wav2vec2 \
---log-keys '["prob_perplexity","code_perplexity","temp"]' --quantize-targets --extractor-mode default \
---conv-feature-layers '[(512, 10, 5)] + [(512, 3, 2)] * 4 + [(512,2,2)] * 2' --final-dim 768 --latent-vars 320 \
---latent-groups 2 --latent-temp '(2.0,0.1,0.999995)' --infonce --optimizer adam \
---adam-betas '(0.9,0.98)' --adam-eps 1e-06 --lr-scheduler polynomial_decay --total-num-update 600000 \
---lr 0.0003 --warmup-updates 32000 --mask-length 10 --mask-prob 0.65 --mask-selection static --mask-other 0 \
---encoder-layerdrop 0.0 --dropout-input 0.1 --dropout-features 0.1 --feature-grad-mult 0.03 \
---loss-weights '[0.1, 10]' --conv-pos 128 --conv-pos-groups 16 --encoder-layers 24 --encoder-embed-dim 1024 \
---encoder-ffn-embed-dim 4096 --encoder-attention-heads 16 --num-negatives 100 --cross-sample-negatives 0 \
---max-sample-size 320000 --min-sample-size 32000 --dropout 0.0 --attention-dropout 0.1 --weight-decay 0.01 \
---max-tokens 1200000 --max-update 600000 --skip-invalid-size-inputs-valid-test --ddp-backend no_c10d
+$ fairseq-hydra-train \
+    task.data=/path/to/data \
+    --config-dir /path/to/fairseq-py/examples/wav2vec/config/pretraining \
+    --config-name wav2vec2_large_librivox
 ```
 
-Note: you can simulate 128 GPUs by using k GPUs and setting --update-freq 128/k
+Note: you can simulate 128 GPUs by using k GPUs and adding command line parameters (before `--config-dir`)
+`distributed_training.distributed_world_size=k` `+optimization.update_freq='[x]'` where x = 128/k
 
 ### Fine-tune a pre-trained model with CTC:
 
@@ -98,32 +109,26 @@ $ python libri_labels.py /path/to/tsv --output-dir /output/dir --output-name $sp
 
 Fine-tuning on 100h of Librispeech with letter targets:
 ```shell script
-valid_subset=dev_other
-python train.py --distributed-world-size 24 --distributed-port $PORT /path/to/training_data --save-dir /model/path --fp16 \
---wer-args '("/path/to/lm/4-gram.bin","/path/to/lexicon",2,-1)' \
---post-process letter --valid-subset $valid_subset --no-epoch-checkpoints --best-checkpoint-metric wer --num-workers 4 \
---max-update 80000 --sentence-avg --task audio_pretraining --arch wav2vec_ctc --w2v-path /path/to/pretrained/model \
---labels ltr --apply-mask --mask-selection static --mask-other 0 --mask-length 10 --mask-prob 0.5 --layerdrop 0.1 \
---mask-channel-selection static --mask-channel-other 0 --mask-channel-length 64 --mask-channel-prob 0.5 --zero-infinity \
---feature-grad-mult 0.0 --freeze-finetune-updates 10000 --validate-after-updates 10000 --optimizer adam \
---adam-betas '(0.9, 0.98)' --adam-eps 1e-08 --lr 2e-05 --lr-scheduler tri_stage --warmup-steps 8000 --hold-steps 32000 \
---decay-steps 40000 --final-lr-scale 0.05 --final-dropout 0.0 --dropout 0.0 --activation-dropout 0.1 --criterion ctc \
---attention-dropout 0.0 --max-tokens 1280000 --seed 2337 --log-format json --log-interval 500 --ddp-backend no_c10d
+$ fairseq-hydra-train \
+    distributed_training.distributed_port=$PORT \
+    task.data=/path/to/data \
+    model.w2v_path=/path/to/model.pt \
+    --config-dir /path/to/fairseq-py/examples/wav2vec/config/finetuning \
+    --config-name base_100h
 ```
 
-Note: you can simulate 24 GPUs by using k GPUs and setting --update-freq 24/k
+There are other config files in the config/finetuning directory that can be used to fine-tune on other splits.
+You can specify the right config via the `--config-name` parameter.
 
-Decoding with a language model during training requires wav2letter [python bindings](https://github.com/facebookresearch/wav2letter/wiki/Building-Python-bindings).
-Alternatively, simply omit the --wer-args flag.
+Note: you can simulate 24 GPUs by using k GPUs and adding command line parameters (before `--config-dir`)
+`distributed_training.distributed_world_size=k` `+optimization.update_freq='[x]'` where x = 24/k
 
-For hyper-parameters to fine-tune other Librispeech splits (10 minutes, 1 hour, etc) please refer to the table in Appendix B in the wav2vec 2.0 paper.
-The main changes to make are adjusting --max-update, and then adjusting --warmup-steps, --hold-steps, and --decay steps so that they use 0.1/0.4/0.5 of max-update respectively. You then need to adjust --mask-prob and --mask-channel-prob. This should be set to the mask-length * x where x is the number in the table and mask-length is what you use for --mask-length (10 in this example. Use --mask-channel-length value for --mask-channel-prob).
-
-For example, for 10 hours, we see in the paper that timestep mask prob should be 0.065, so we set --mask-prob to 10* 0.065 = 0.65. channel mask prob is 0.004, so we set it to 64 * 0.004 = 0.256. then we set --max-updates to 20000 and change --warmup-steps to 20000 * 0.1 = 2000, --hold-steps to 8000 and --decay-steps to 10000.
+Decoding with a language model during training requires flashlight [python bindings](https://github.com/facebookresearch/flashlight/tree/master/bindings/python) (previously called [wav2letter](https://github.com/facebookresearch/wav2letter).
+If you want to use a language model, add `+criterion.wer_args='[/path/to/kenlm, /path/to/lexicon, 2, -1]'` to the command line.
 
 ### Evaluating a CTC model:
 
-Evaluating a CTC model with a language model requires wav2letter [python bindings](https://github.com/facebookresearch/wav2letter/wiki/Building-Python-bindings) to be installed.
+Evaluating a CTC model with a language model requires [flashlight python bindings](https://github.com/facebookresearch/flashlight/tree/master/bindings/python) (previously called [wav2letter](https://github.com/facebookresearch/wav2letter) to be installed.
 
 Fairseq transformer language model used in the wav2vec 2.0 paper can be obtained from the [wav2letter model repository](https://github.com/facebookresearch/wav2letter/tree/master/recipes/sota/2019).
 Be sure to upper-case the language model vocab after downloading it.
@@ -142,6 +147,35 @@ python examples/speech_recognition/infer.py /checkpoint/abaevski/data/speech/lib
 
 To get raw numbers, use --w2l-decoder viterbi and omit the lexicon. To use the transformer language model, use --w2l-decoder fairseqlm.
 
+## Use wav2vec 2.0 with 🤗Transformers:
+
+Wav2Vec2 is also available in the [🤗Transformers library](https://github.com/huggingface/transformers) since version 4.3.
+
+Pretrained Models can be found on the [hub](https://huggingface.co/models?filter=wav2vec2) 
+and documentation can be found [here](https://huggingface.co/transformers/master/model_doc/wav2vec2.html).
+
+Usage example:
+
+```python
+# !pip install transformers
+import soundfile as sf
+import torch
+from transformers import Wav2Vec2ForMaskedLM, Wav2Vec2Tokenizer
+
+# load pretrained model
+tokenizer = Wav2Vec2Tokenizer.from_pretrained("facebook/wav2vec2-base-960h")
+model = Wav2Vec2ForMaskedLM.from_pretrained("facebook/wav2vec2-base-960h")
+
+# load audio
+audio_input, _ = sf.read("path/to/audio/file")
+
+# transcribe
+input_values = tokenizer(audio_input, return_tensors="pt").input_values
+logits = model(input_values).logits
+predicted_ids = torch.argmax(logits, dim=-1)
+transcription = tokenizer.batch_decode(predicted_ids)[0]
+```
+
 # wav2vec
 
 Example to train a wav2vec model as described in [wav2vec: Unsupervised Pre-training for Speech Recognition (Schneider et al., 2019)](https://arxiv.org/abs/1904.05862).
@@ -155,11 +189,11 @@ Wav2Vec large | [Librispeech](http://www.openslr.org/12) | [download](https://dl
 #### Example usage:
 ```python
 import torch
-from fairseq.models.wav2vec import Wav2VecModel
+import fairseq
 
-cp = torch.load('/path/to/wav2vec.pt')
-model = Wav2VecModel.build_model(cp['args'], task=None)
-model.load_state_dict(cp['model'])
+cp_path = '/path/to/wav2vec.pt'
+model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([cp_path])
+model = model[0]
 model.eval()
 
 wav_input_16khz = torch.randn(1,10000)
@@ -181,11 +215,63 @@ $ python examples/wav2vec/wav2vec_manifest.py /path/to/waves --dest /manifest/pa
 
 ```
 $ python train.py /manifest/path --save-dir /model/path --num-workers 6 --fp16 --max-update 400000 --save-interval 1 --no-epoch-checkpoints \
---arch wav2vec --task audio_pretraining --lr 1e-06 --min-lr 1e-09 --optimizer adam --max-lr 0.005 --lr-scheduler cosine \
+--arch wav2vec --task audio_pretraining --min-lr 1e-06 --stop-min-lr 1e-09 --optimizer adam --lr 0.005 --lr-scheduler cosine \
 --conv-feature-layers [(512, 10, 5), (512, 8, 4), (512, 4, 2), (512, 4, 2), (512, 4, 2), (512, 1, 1), (512, 1, 1)] \
 --conv-aggregator-layers [(512, 2, 1), (512, 3, 1), (512, 4, 1), (512, 5, 1), (512, 6, 1), (512, 7, 1), (512, 8, 1), (512, 9, 1), (512, 10, 1), (512, 11, 1), (512, 12, 1), (512, 13, 1)] \
 --skip-connections-agg --residual-scale 0.5 --log-compression --warmup-updates 500 --warmup-init-lr 1e-07 --criterion wav2vec --num-negatives 10 \
 --max-sample-size 150000 --max-tokens 1500000 --skip-invalid-size-inputs-valid-test
+```
+
+### Run wav2vec2 pre-training on Google Cloud TPUs:
+
+Wav2Vec2 is now supported on TPUs! It's currently pre-training only.
+
+#### Using hydra on a v3-8:
+
+```
+$ OMP_NUM_THREADS=1 fairseq-hydra-train \
+  task.data=/manifest/path \
+  --config-dir /PATH/TO/FAIRSEQ/examples/wav2vec/config/pretraining \
+  --config-name wav2vec2_large_librivox_tpu.yaml
+```
+
+#### Using command line arguments on a v3-8:
+
+```
+$ OMP_NUM_THREADS=1 python train.py /manifest/path --save-dir /model/path --num-workers 6 --fp16 --max-update 400000 --save-interval 1 --no-epoch-checkpoints \
+--arch wav2vec2 --task audio_pretraining --min-lr 1e-06 --stop-min-lr 1e-09 --optimizer adam --lr 0.005 --lr-scheduler cosine \
+--conv-feature-layers [(512, 10, 5), (512, 8, 4), (512, 4, 2), (512, 4, 2), (512, 4, 2), (512, 1, 1), (512, 1, 1)] \
+--conv-aggregator-layers [(512, 2, 1), (512, 3, 1), (512, 4, 1), (512, 5, 1), (512, 6, 1), (512, 7, 1), (512, 8, 1), (512, 9, 1), (512, 10, 1), (512, 11, 1), (512, 12, 1), (512, 13, 1)] \
+--skip-connections-agg --residual-scale 0.5 --log-compression --warmup-updates 500 --warmup-init-lr 1e-07 --criterion wav2vec --num-negatives 10 \
+--max-sample-size 150000 --max-tokens 1500000 --skip-invalid-size-inputs-valid-test \
+--tpu --distributed-world-size 8 --num-batch-buckets 3 --enable-padding \
+--encoder-layerdrop 0 --mask-channel-prob 0.1
+```
+
+#### Using hydra on a pod slice (v3-N with N > 8):
+
+```
+$ OMP_NUM_THREADS=1 fairseq-hydra-train \
+  task.data=/manifest/path \
+  --config-dir /PATH/TO/FAIRSEQ/examples/wav2vec/config/pretraining \
+  --config-name wav2vec2_large_librivox_tpu-pod.yaml  # edit distributed-world-size accordingly
+```
+
+#### Using command line arguments on a pod slice (v3-N with N > 8):
+
+
+```
+$ python -m torch_xla.distributed.xla_dist \
+  --tpu ${TPUNAME} --conda-env=torch-xla-${TORCH_XLA_VERSION} --env OMP_NUM_THREADS=1 \
+  -- \
+python train.py /manifest/path --save-dir /model/path --num-workers 6 --fp16 --max-update 400000 --save-interval 1 --no-epoch-checkpoints \
+--arch wav2vec2 --task audio_pretraining --min-lr 1e-06 --stop-min-lr 1e-09 --optimizer adam --lr 0.005 --lr-scheduler cosine \
+--conv-feature-layers [(512, 10, 5), (512, 8, 4), (512, 4, 2), (512, 4, 2), (512, 4, 2), (512, 1, 1), (512, 1, 1)] \
+--conv-aggregator-layers [(512, 2, 1), (512, 3, 1), (512, 4, 1), (512, 5, 1), (512, 6, 1), (512, 7, 1), (512, 8, 1), (512, 9, 1), (512, 10, 1), (512, 11, 1), (512, 12, 1), (512, 13, 1)] \
+--skip-connections-agg --residual-scale 0.5 --log-compression --warmup-updates 500 --warmup-init-lr 1e-07 --criterion wav2vec --num-negatives 10 \
+--max-sample-size 150000 --max-tokens 1500000 --skip-invalid-size-inputs-valid-test \
+--tpu --distributed-world-size ${WORLD_SIZE} --num-batch-buckets 3 --enable-padding \
+--encoder-layerdrop 0 --mask-channel-prob 0.1
 ```
 
 ### Extract embeddings from the downstream task data:
@@ -212,11 +298,11 @@ Roberta on K-means codes | [Librispeech](http://www.openslr.org/12) | [download]
 #### Example usage:
 ```python
 import torch
-from fairseq.models.wav2vec import Wav2VecModel
+import fairseq
 
 cp = torch.load('/path/to/vq-wav2vec.pt')
-model = Wav2VecModel.build_model(cp['args'], task=None)
-model.load_state_dict(cp['model'])
+model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([cp])
+model = model[0]
 model.eval()
 
 wav_input_16khz = torch.randn(1,10000)
@@ -239,8 +325,8 @@ $ python examples/wav2vec/wav2vec_manifest.py /path/to/waves --dest /manifest/pa
 
 ```
 $ python train.py /manifest/path --save-dir /model/path --num-workers 6 --fp16 --max-update 400000 \
---save-interval 1 --no-epoch-checkpoints --arch wav2vec --task audio_pretraining --lr 1e-06 --min-lr 1e-09 \
---optimizer adam --max-lr 1e-05 --lr-scheduler cosine \
+--save-interval 1 --no-epoch-checkpoints --arch wav2vec --task audio_pretraining --min-lr 1e-06 --stop-min-lr 1e-09 \
+--optimizer adam --lr 1e-05 --lr-scheduler cosine \
 --conv-feature-layers [(512, 10, 5), (512, 8, 4), (512, 4, 2), (512, 4, 2), (512, 4, 2), (512, 1, 1), (512, 1, 1), (512, 1, 1)] \
 --conv-aggregator-layers [(512, 2, 1), (512, 3, 1), (512, 4, 1), (512, 5, 1), (512, 6, 1), (512, 7, 1), (512, 8, 1), (512, 9, 1), (512, 10, 1), (512, 11, 1), (512, 12, 1), (512, 13, 1)] \
 --activation gelu --offset auto --skip-connections-agg --residual-scale 0.5 \

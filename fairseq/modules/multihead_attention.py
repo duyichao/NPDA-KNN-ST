@@ -87,13 +87,9 @@ class MultiheadAttention(nn.Module):
         self.reset_parameters()
 
         self.onnx_trace = False
-        self.tpu = False
 
     def prepare_for_onnx_export_(self):
         self.onnx_trace = True
-
-    def prepare_for_tpu_(self, **kwargs):
-        self.tpu = True
 
     def reset_parameters(self):
         if self.qkv_same_dim:
@@ -148,13 +144,22 @@ class MultiheadAttention(nn.Module):
         if need_head_weights:
             need_weights = True
 
+        is_tpu = query.device.type == "xla"
+
         tgt_len, bsz, embed_dim = query.size()
+        src_len = tgt_len
         assert embed_dim == self.embed_dim
         assert list(query.size()) == [tgt_len, bsz, embed_dim]
+        if key is not None:
+            src_len, key_bsz, _ = key.size()
+            if not torch.jit.is_scripting():
+                assert key_bsz == bsz
+                assert value is not None
+                assert src_len, bsz == value.shape[:2]
 
         if (
             not self.onnx_trace
-            and not self.tpu  # don't use PyTorch version on TPUs
+            and not is_tpu  # don't use PyTorch version on TPUs
             and incremental_state is None
             and not static_kv
             # A workaround for quantization to work. Otherwise JIT compilation
@@ -264,6 +269,7 @@ class MultiheadAttention(nn.Module):
                 else:
                     assert k is not None
                     k = torch.cat([prev_key, k], dim=1)
+                src_len = k.size(1)
             if "prev_value" in saved_state:
                 _prev_value = saved_state["prev_value"]
                 assert _prev_value is not None
@@ -292,7 +298,7 @@ class MultiheadAttention(nn.Module):
             assert incremental_state is not None
             incremental_state = self._set_input_buffer(incremental_state, saved_state)
         assert k is not None
-        src_len = k.size(1)
+        assert k.size(1) == src_len
 
         # This is part of a workaround to get around fork/join parallelism
         # not supporting Optional types.
@@ -337,7 +343,7 @@ class MultiheadAttention(nn.Module):
         if key_padding_mask is not None:
             # don't attend to padding symbols
             attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len, src_len)
-            if not self.tpu:
+            if not is_tpu:
                 attn_weights = attn_weights.masked_fill(
                     key_padding_mask.unsqueeze(1).unsqueeze(2).to(torch.bool),
                     float("-inf"),
@@ -397,21 +403,27 @@ class MultiheadAttention(nn.Module):
         # leaves the frame, there will be a time when prev or current
         # is None
         elif prev_key_padding_mask is not None:
-            filler = torch.zeros(
-                (batch_size, src_len - prev_key_padding_mask.size(1)),
-                device=prev_key_padding_mask.device,
-            )
-            new_key_padding_mask = torch.cat(
-                [prev_key_padding_mask.float(), filler.float()], dim=1
-            )
+            if src_len > prev_key_padding_mask.size(1):
+                filler = torch.zeros(
+                    (batch_size, src_len - prev_key_padding_mask.size(1)),
+                    device=prev_key_padding_mask.device,
+                )
+                new_key_padding_mask = torch.cat(
+                    [prev_key_padding_mask.float(), filler.float()], dim=1
+                )
+            else:
+                new_key_padding_mask = prev_key_padding_mask.float()
         elif key_padding_mask is not None:
-            filler = torch.zeros(
-                (batch_size, src_len - key_padding_mask.size(1)),
-                device=key_padding_mask.device,
-            )
-            new_key_padding_mask = torch.cat(
-                [filler.float(), key_padding_mask.float()], dim=1
-            )
+            if src_len > key_padding_mask.size(1):
+                filler = torch.zeros(
+                    (batch_size, src_len - key_padding_mask.size(1)),
+                    device=key_padding_mask.device,
+                )
+                new_key_padding_mask = torch.cat(
+                    [filler.float(), key_padding_mask.float()], dim=1
+                )
+            else:
+                new_key_padding_mask = key_padding_mask.float()
         else:
             new_key_padding_mask = prev_key_padding_mask
         return new_key_padding_mask

@@ -90,7 +90,7 @@ well for the IWSLT 2014 dataset:
 
     > mkdir -p checkpoints/fconv
     > CUDA_VISIBLE_DEVICES=0 fairseq-train data-bin/iwslt14.tokenized.de-en \
-        --lr 0.25 --clip-norm 0.1 --dropout 0.2 --max-tokens 4000 \
+        --optimizer nag --lr 0.25 --clip-norm 0.1 --dropout 0.2 --max-tokens 4000 \
         --arch fconv_iwslt_de_en --save-dir checkpoints/fconv
 
 By default, :ref:`fairseq-train` will use all available GPUs on your machine. Use the
@@ -170,21 +170,31 @@ The easiest way to launch jobs is with the `torch.distributed.launch
 
 For example, to train a large English-German Transformer model on 2 nodes each
 with 8 GPUs (in total 16 GPUs), run the following command on each node,
-replacing ``node_rank=0`` with ``node_rank=1`` on the second node:
+replacing ``node_rank=0`` with ``node_rank=1`` on the second node and making
+sure to update ``--master_addr`` to the IP address of the first node:
 
 .. code-block:: console
 
     > python -m torch.distributed.launch --nproc_per_node=8 \
         --nnodes=2 --node_rank=0 --master_addr="192.168.1.1" \
-        --master_port=1234 \
+        --master_port=12345 \
         $(which fairseq-train) data-bin/wmt16_en_de_bpe32k \
         --arch transformer_vaswani_wmt_en_de_big --share-all-embeddings \
         --optimizer adam --adam-betas '(0.9, 0.98)' --clip-norm 0.0 \
         --lr-scheduler inverse_sqrt --warmup-init-lr 1e-07 --warmup-updates 4000 \
-        --lr 0.0005 --min-lr 1e-09 \
+        --lr 0.0005 \
         --dropout 0.3 --weight-decay 0.0 --criterion label_smoothed_cross_entropy --label-smoothing 0.1 \
         --max-tokens 3584 \
-        --fp16  --distributed-no-spawn 
+        --max-epoch 70 \
+        --fp16
+
+On SLURM clusters, fairseq will automatically detect the number of nodes and
+GPUs, but a port number must be provided:
+
+.. code-block:: console
+
+    > salloc --gpus=16 --nodes 2 (...)
+    > srun fairseq-train --distributed-port 12345 (...).
 
 Sharding very large datasets
 ----------------------------

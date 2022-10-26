@@ -5,10 +5,12 @@
 
 import argparse
 import copy
+import logging
 import unittest
 
 import torch
 from fairseq.optim.fp16_optimizer import FP16Optimizer, MemoryEfficientFP16Optimizer
+from omegaconf import OmegaConf
 
 
 @unittest.skipIf(not torch.cuda.is_available(), "test requires a GPU")
@@ -27,18 +29,32 @@ class TestGradientScaling(unittest.TestCase):
         self.model.cuda().half()
         self.params = list(self.model.parameters())
 
-        self.namespace_dls = argparse.Namespace(
-            optimizer="adam",
-            lr=[0.1],
-            adam_betas="(0.9, 0.999)",
-            adam_eps=1e-8,
-            weight_decay=0.0,
-            fp16_init_scale=1,
-            fp16_scale_window=1,
-            fp16_scale_tolerance=1,
-            threshold_loss_scale=1,
-            min_loss_scale=1e-4,
+        self.cfg_dls = OmegaConf.create(
+            {
+                "optimization": {
+                    "lr": [0.1],
+                },
+                "optimizer": {
+                    "_name": "adam",
+                    "lr": [0.1],
+                    "adam_betas": "(0.9, 0.999)",
+                    "adam_eps": 1e-8,
+                    "weight_decay": 0.0,
+                },
+                "common": {
+                    "fp16_init_scale": 1,
+                    "fp16_scale_window": 1,
+                    "fp16_scale_tolerance": 1,
+                    "threshold_loss_scale": 1,
+                    "min_loss_scale": 1e-4,
+                    "tpu": False,
+                },
+            }
         )
+        logging.disable(logging.CRITICAL)
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
 
     def run_iter(self, model, params, optimizer):
         optimizer.zero_grad()
@@ -68,7 +84,7 @@ class TestGradientScaling(unittest.TestCase):
     def test_mixed_precision(self):
         model = copy.deepcopy(self.model)
         params = list(model.parameters())
-        optimizer = FP16Optimizer.build_optimizer(self.namespace_dls, params)
+        optimizer = FP16Optimizer.build_optimizer(self.cfg_dls, params)
 
         self.run_iter(model, params, optimizer)
         self.assertTrue(
@@ -87,9 +103,7 @@ class TestGradientScaling(unittest.TestCase):
     def test_memory_efficient(self):
         model = copy.deepcopy(self.model)
         params = list(model.parameters())
-        optimizer = MemoryEfficientFP16Optimizer.build_optimizer(
-            self.namespace_dls, params
-        )
+        optimizer = MemoryEfficientFP16Optimizer.build_optimizer(self.cfg_dls, params)
 
         self.run_iter(model, params, optimizer)
 

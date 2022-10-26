@@ -36,7 +36,7 @@ The following command will train a *Levenshtein Transformer* on the binarized da
 fairseq-train \
     data-bin/wmt14_en_de_distill \
     --save-dir checkpoints \
-    --ddp-backend=no_c10d \
+    --ddp-backend=legacy_ddp \
     --task translation_lev \
     --criterion nat_loss \
     --arch levenshtein_transformer \
@@ -44,7 +44,7 @@ fairseq-train \
     --share-all-embeddings \
     --optimizer adam --adam-betas '(0.9,0.98)' \
     --lr 0.0005 --lr-scheduler inverse_sqrt \
-    --min-lr '1e-09' --warmup-updates 10000 \
+    --stop-min-lr '1e-09' --warmup-updates 10000 \
     --warmup-init-lr '1e-07' --label-smoothing 0.1 \
     --dropout 0.3 --weight-decay 0.01 \
     --decoder-learned-pos \

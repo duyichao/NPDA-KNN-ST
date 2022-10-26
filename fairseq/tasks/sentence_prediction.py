@@ -119,9 +119,8 @@ class SentencePredictionTask(LegacyFairseqTask):
         )
         logger.info("[input] dictionary: {} types".format(len(data_dict)))
 
-        label_dict = None
+        # load label dictionary
         if not args.regression_target:
-            # load label dictionary
             label_dict = cls.load_dictionary(
                 args,
                 os.path.join(args.data, "label", "dict.txt"),
@@ -135,23 +134,30 @@ class SentencePredictionTask(LegacyFairseqTask):
     def load_dataset(self, split, combine=False, **kwargs):
         """Load a given dataset split (e.g., train, valid, test)."""
 
-        def get_path(type, split):
-            return os.path.join(self.args.data, type, split)
+        def get_path(key, split):
+            return os.path.join(self.args.data, key, split)
 
-        def make_dataset(type, dictionary):
-            split_path = get_path(type, split)
+        def make_dataset(key, dictionary):
+            split_path = get_path(key, split)
 
-            dataset = data_utils.load_indexed_dataset(
-                split_path,
-                dictionary,
-                self.args.dataset_impl,
-                combine=combine,
-            )
+            try:
+                dataset = data_utils.load_indexed_dataset(
+                    split_path,
+                    dictionary,
+                    self.args.dataset_impl,
+                    combine=combine,
+                )
+            except Exception as e:
+                if "StorageException: [404] Path not found" in str(e):
+                    logger.warning(f"dataset {e} not found")
+                    dataset = None
+                else:
+                    raise e
             return dataset
 
         input0 = make_dataset("input0", self.source_dictionary)
         assert input0 is not None, "could not find dataset: {}".format(
-            get_path(type, split)
+            get_path("input0", split)
         )
         input1 = make_dataset("input1", self.source_dictionary)
 
@@ -174,7 +180,7 @@ class SentencePredictionTask(LegacyFairseqTask):
             split,
             self.args.shorten_data_split_list,
             self.args.shorten_method,
-            self.args.max_positions,
+            self.max_positions(),
             self.args.seed,
         )
 

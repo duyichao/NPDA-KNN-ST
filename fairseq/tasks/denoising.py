@@ -11,13 +11,19 @@ from fairseq.data import (
     AppendTokenDataset,
     DenoisingDataset,
     Dictionary,
+    IdDataset,
+    NestedDictionaryDataset,
+    NumelDataset,
+    PadDataset,
     PrependTokenDataset,
     StripTokenDataset,
     TokenBlockDataset,
     data_utils,
 )
 from fairseq.data.encoders.utils import get_whole_word_mask
+from fairseq.data.shorten_dataset import maybe_shorten_dataset
 from fairseq.tasks import LegacyFairseqTask, register_task
+import numpy as np
 
 
 logger = logging.getLogger(__name__)
@@ -116,6 +122,20 @@ class DenoisingTask(LegacyFairseqTask):
             help="max number of tokens in the target sequence",
         )
 
+        parser.add_argument(
+            "--shorten-method",
+            default="none",
+            choices=["none", "truncate", "random_crop"],
+            help="if not none, shorten sequences that exceed --tokens-per-sample",
+        )
+        parser.add_argument(
+            "--shorten-data-split-list",
+            default="",
+            help="comma-separated list of dataset splits to apply shortening to, "
+            'e.g., "train,valid" (default: all dataset splits)',
+        )
+
+
     def __init__(self, args, dictionary):
         super().__init__(args)
         self.dictionary = dictionary
@@ -157,6 +177,15 @@ class DenoisingTask(LegacyFairseqTask):
 
         dataset = StripTokenDataset(dataset, self.dictionary.eos())
 
+        dataset = maybe_shorten_dataset(
+            dataset,
+            split,
+            self.args.shorten_data_split_list,
+            self.args.shorten_method,
+            self.args.tokens_per_sample,
+            self.args.seed,
+        )
+
         # create continuous blocks of tokens
         dataset = TokenBlockDataset(
             dataset,
@@ -193,6 +222,41 @@ class DenoisingTask(LegacyFairseqTask):
                 split,
                 len(self.datasets[split]),
             )
+        )
+
+    def build_dataset_for_inference(self, src_tokens, src_lengths, **kwargs):
+        """
+        Generate batches for inference. We assume that the input begins with a
+        bos symbol (`<s>`) and ends with an eos symbol (`</s>`).
+        """
+        pad = self.source_dictionary.pad()
+        eos = self.source_dictionary.eos()
+        src_dataset = TokenBlockDataset(
+            src_tokens,
+            src_lengths,
+            block_size=self.args.tokens_per_sample - 2,  # for <s> and </s>
+            pad=pad,
+            eos=eos,
+            break_mode=self.args.sample_break_mode,
+            document_sep_len=0,
+        )
+        prev_output_tokens = PrependTokenDataset(
+            StripTokenDataset(src_dataset, eos), eos
+        )
+        src_dataset = PadDataset(src_dataset, pad_idx=pad, left_pad=False)
+        return NestedDictionaryDataset(
+            {
+                "id": IdDataset(),
+                "net_input": {
+                    "src_tokens": src_dataset,
+                    "src_lengths": NumelDataset(src_dataset, reduce=False),
+                    "prev_output_tokens": PadDataset(
+                        prev_output_tokens, pad_idx=pad, left_pad=False
+                    ),
+                },
+                "target": src_dataset,
+            },
+            sizes=[np.array(src_lengths)],
         )
 
     def max_positions(self):

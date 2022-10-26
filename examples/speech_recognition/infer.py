@@ -8,6 +8,7 @@
 Run inference for pre-processed data with a trained model.
 """
 
+import ast
 import logging
 import math
 import os
@@ -120,7 +121,7 @@ def process_predictions(
         if "words" in hypo:
             hyp_words = " ".join(hypo["words"])
         else:
-            hyp_words = post_process(hyp_pieces, args.remove_bpe)
+            hyp_words = post_process(hyp_pieces, args.post_process)
 
         if res_files is not None:
             print(
@@ -133,7 +134,7 @@ def process_predictions(
             )
 
         tgt_pieces = tgt_dict.string(target_tokens)
-        tgt_words = post_process(tgt_pieces, args.remove_bpe)
+        tgt_words = post_process(tgt_pieces, args.post_process)
 
         if res_files is not None:
             print(
@@ -143,11 +144,11 @@ def process_predictions(
             print(
                 "{} ({}-{})".format(tgt_words, speaker, id), file=res_files["ref.words"]
             )
-            # only score top hypothesis
-            if not args.quiet:
-                logger.debug("HYPO:" + hyp_words)
-                logger.debug("TARGET:" + tgt_words)
-                logger.debug("___________________")
+
+        if not args.quiet:
+            logger.info("HYPO:" + hyp_words)
+            logger.info("TARGET:" + tgt_words)
+            logger.info("___________________")
 
         hyp_words = hyp_words.split()
         tgt_words = tgt_words.split()
@@ -175,46 +176,6 @@ def prepare_result_files(args):
         "ref.words": get_res_file("ref.word"),
         "ref.units": get_res_file("ref.units"),
     }
-
-
-def load_models_and_criterions(
-    filenames, data_path, arg_overrides=None, task=None, model_state=None
-):
-    models = []
-    criterions = []
-
-    if arg_overrides is None:
-        arg_overrides = {}
-
-    arg_overrides["wer_args"] = None
-    arg_overrides["data"] = data_path
-
-    if filenames is None:
-        assert model_state is not None
-        filenames = [0]
-    else:
-        filenames = filenames.split(":")
-
-    for filename in filenames:
-        if model_state is None:
-            if not os.path.exists(filename):
-                raise IOError("Model file not found: {}".format(filename))
-            state = checkpoint_utils.load_checkpoint_to_cpu(filename, arg_overrides)
-        else:
-            state = model_state
-
-        args = state["args"]
-        if task is None:
-            task = tasks.setup_task(args)
-        model = task.build_model(args)
-        model.load_state_dict(state["model"], strict=True)
-        models.append(model)
-
-        criterion = task.build_criterion(args)
-        if "criterion" in state:
-            criterion.load_state_dict(state["criterion"], strict=True)
-        criterions.append(criterion)
-    return models, criterions, args
 
 
 def optimize_models(args, use_cuda, models):
@@ -255,41 +216,43 @@ def main(args, task=None, model_state=None):
 
     use_cuda = torch.cuda.is_available() and not args.cpu
 
-    if task is None:
-        # Load dataset splits
-        task = tasks.setup_task(args)
-        task.load_dataset(args.gen_subset)
+    logger.info("| decoding with criterion {}".format(args.criterion))
 
-        logger.info(
-            "| {} {} {} examples".format(
-                args.data, args.gen_subset, len(task.dataset(args.gen_subset))
-            )
+    task = tasks.setup_task(args)
+
+    # Load ensemble
+    if args.load_emissions:
+        models, criterions = [], []
+        task.load_dataset(args.gen_subset)
+    else:
+        logger.info("| loading model(s) from {}".format(args.path))
+        models, saved_cfg, task = checkpoint_utils.load_model_ensemble_and_task(
+            utils.split_paths(args.path),
+            arg_overrides=ast.literal_eval(args.model_overrides),
+            task=task,
+            suffix=args.checkpoint_suffix,
+            strict=(args.checkpoint_shard_count == 1),
+            num_shards=args.checkpoint_shard_count,
+            state=model_state,
         )
+        optimize_models(args, use_cuda, models)
+        task.load_dataset(args.gen_subset, task_cfg=saved_cfg.task)
+
 
     # Set dictionary
     tgt_dict = task.target_dictionary
 
-    logger.info("| decoding with criterion {}".format(args.criterion))
-
-    # Load ensemble
-
-    if args.load_emissions:
-        models, criterions = [], []
-    else:
-        logger.info("| loading model(s) from {}".format(args.path))
-        models, criterions, _ = load_models_and_criterions(
-            args.path,
-            data_path=args.data,
-            arg_overrides=eval(args.model_overrides),  # noqa
-            task=task,
-            model_state=model_state,
+    logger.info(
+        "| {} {} {} examples".format(
+            args.data, args.gen_subset, len(task.dataset(args.gen_subset))
         )
-        optimize_models(args, use_cuda, models)
+    )
 
     # hack to pass transitions to W2lDecoder
     if args.criterion == "asg_loss":
-        trans = criterions[0].asg.trans.data
-        args.asg_transitions = torch.flatten(trans).tolist()
+        raise NotImplementedError("asg_loss is currently not supported")
+        # trans = criterions[0].asg.trans.data
+        # args.asg_transitions = torch.flatten(trans).tolist()
 
     # Load dataset (possibly sharded)
     itr = get_dataset_itr(args, task, models)
@@ -313,7 +276,7 @@ def main(args, task=None, model_state=None):
             return W2lFairseqLMDecoder(args, task.target_dictionary)
         else:
             print(
-                "only wav2letter decoders with (viterbi, kenlm, fairseqlm) options are supported at the moment"
+                "only flashlight decoders with (viterbi, kenlm, fairseqlm) options are supported at the moment"
             )
 
     # please do not touch this unless you test both generate.py and infer.py with audio_pretraining task

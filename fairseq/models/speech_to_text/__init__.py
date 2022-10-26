@@ -4,4 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 from .berard import *  # noqa
+from .convtransformer import *  # noqa
 from .s2t_transformer import *  # noqa
+from .s2t_jmt_transformer import *

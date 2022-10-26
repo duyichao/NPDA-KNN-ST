@@ -9,9 +9,9 @@ from fairseq.dataclass.utils import gen_parser_from_dataclass
 
 
 class FairseqOptimizer(object):
-    def __init__(self, args):
+    def __init__(self, cfg):
         super().__init__()
-        self.args = args
+        self.cfg = cfg
 
     @classmethod
     def add_args(cls, parser):
@@ -94,24 +94,37 @@ class FairseqOptimizer(object):
         """Computes the sum of gradients of the given tensor w.r.t. graph leaves."""
         loss.backward()
 
+    def all_reduce_grads(self, module):
+        """Manually all-reduce gradients (if required)."""
+        if hasattr(module, "all_reduce_grads"):
+            module.all_reduce_grads()
+
     def multiply_grads(self, c):
         """Multiplies grads by a constant *c*."""
         for p in self.params:
             if p.grad is not None:
+                if torch.is_tensor(c):
+                    c = c.to(p.grad.device)
                 p.grad.data.mul_(c)
 
     def clip_grad_norm(self, max_norm, aggregate_norm_fn=None):
         """Clips gradient norm."""
         return utils.clip_grad_norm_(self.params, max_norm, aggregate_norm_fn)
 
-    def step(self, closure=None, scale=1.0):
+    def step(self, closure=None, scale=1.0, groups=None):
         """Performs a single optimization step."""
         if self.supports_step_with_scale:
-            self.optimizer.step(closure, scale=scale)
+            if self.supports_groups:
+                self.optimizer.step(closure, scale=scale, groups=groups)
+            else:
+                self.optimizer.step(closure, scale=scale)
         else:
             if scale != 1.0:
                 self.multiply_grads(1.0 / scale)
-            self.optimizer.step(closure)
+            if self.supports_groups:
+                self.optimizer.step(closure, groups=groups)
+            else:
+                self.optimizer.step(closure)
 
     def zero_grad(self):
         """Clears the gradients of all optimized parameters."""
@@ -132,6 +145,12 @@ class FairseqOptimizer(object):
         return False
 
     @property
+    def supports_groups(self):
+        if hasattr(self.optimizer, "supports_groups"):
+            return self.optimizer.supports_groups
+        return False
+
+    @property
     def supports_flat_params(self):
         """
         Whether the optimizer supports collapsing of the model
@@ -143,6 +162,16 @@ class FairseqOptimizer(object):
 
     def average_params(self):
         pass
+
+    def broadcast_global_state_dict(self, state_dict):
+        """
+        Broadcasts a global state dict to all ranks.
+        Useful for optimizers that shard state between ranks.
+        """
+        if hasattr(self.optimizer, "broadcast_global_state_dict"):
+            return self.optimizer.broadcast_global_state_dict(state_dict)
+        else:
+            return state_dict
 
 
 class LegacyFairseqOptimizer(FairseqOptimizer):

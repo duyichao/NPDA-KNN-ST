@@ -6,7 +6,7 @@ Note that we need to have an additional module to perform "length prediction" (`
 fairseq-train \
     data-bin/wmt14_en_de_distill \
     --save-dir checkpoints \
-    --ddp-backend=no_c10d \
+    --ddp-backend=legacy_ddp \
     --task translation_lev \
     --criterion nat_loss \
     --arch nonautoregressive_transformer \
@@ -14,7 +14,7 @@ fairseq-train \
     --share-all-embeddings \
     --optimizer adam --adam-betas '(0.9,0.98)' \
     --lr 0.0005 --lr-scheduler inverse_sqrt \
-    --min-lr '1e-09' --warmup-updates 10000 \
+    --stop-min-lr '1e-09' --warmup-updates 10000 \
     --warmup-init-lr '1e-07' --label-smoothing 0.1 \
     --dropout 0.3 --weight-decay 0.01 \
     --decoder-learned-pos \
@@ -35,7 +35,7 @@ Note that we implemented a low-rank appromixated CRF model by setting `--crf-low
 fairseq-train \
     data-bin/wmt14_en_de_distill \
     --save-dir checkpoints \
-    --ddp-backend=no_c10d \
+    --ddp-backend=legacy_ddp \
     --task translation_lev \
     --criterion nat_loss \
     --arch nacrf_transformer \
@@ -43,7 +43,7 @@ fairseq-train \
     --share-all-embeddings \
     --optimizer adam --adam-betas '(0.9,0.98)' \
     --lr 0.0005 --lr-scheduler inverse_sqrt \
-    --min-lr '1e-09' --warmup-updates 10000 \
+    --stop-min-lr '1e-09' --warmup-updates 10000 \
     --warmup-init-lr '1e-07' --label-smoothing 0.1 \
     --dropout 0.3 --weight-decay 0.01 \
     --decoder-learned-pos \
@@ -68,7 +68,7 @@ Note that `--train-step` means how many iterations of refinement we used during 
 fairseq-train \
     data-bin/wmt14_en_de_distill \
     --save-dir checkpoints \
-    --ddp-backend=no_c10d \
+    --ddp-backend=legacy_ddp \
     --task translation_lev \
     --criterion nat_loss \
     --arch iterative_nonautoregressive_transformer \
@@ -76,7 +76,7 @@ fairseq-train \
     --share-all-embeddings \
     --optimizer adam --adam-betas '(0.9,0.98)' \
     --lr 0.0005 --lr-scheduler inverse_sqrt \
-    --min-lr '1e-09' --warmup-updates 10000 \
+    --stop-min-lr '1e-09' --warmup-updates 10000 \
     --warmup-init-lr '1e-07' --label-smoothing 0.1 \
     --dropout 0.3 --weight-decay 0.01 \
     --decoder-learned-pos \
@@ -101,7 +101,7 @@ Note that we need to specify the "slot-loss" (uniform or balanced tree) describe
 fairseq-train \
     data-bin/wmt14_en_de_distill \
     --save-dir checkpoints \
-    --ddp-backend=no_c10d \
+    --ddp-backend=legacy_ddp \
     --task translation_lev \
     --criterion nat_loss \
     --arch insertion_transformer \
@@ -109,7 +109,7 @@ fairseq-train \
     --share-all-embeddings \
     --optimizer adam --adam-betas '(0.9,0.98)' \
     --lr 0.0005 --lr-scheduler inverse_sqrt \
-    --min-lr '1e-09' --warmup-updates 10000 \
+    --stop-min-lr '1e-09' --warmup-updates 10000 \
     --warmup-init-lr '1e-07' --label-smoothing 0.1 \
     --dropout 0.3 --weight-decay 0.01 \
     --decoder-learned-pos \
@@ -128,7 +128,7 @@ fairseq-train \
 fairseq-train \
     data-bin/wmt14_en_de_distill \
     --save-dir checkpoints \
-    --ddp-backend=no_c10d \
+    --ddp-backend=legacy_ddp \
     --task translation_lev \
     --criterion nat_loss \
     --arch cmlm_transformer \
@@ -136,7 +136,7 @@ fairseq-train \
     --share-all-embeddings \
     --optimizer adam --adam-betas '(0.9,0.98)' \
     --lr 0.0005 --lr-scheduler inverse_sqrt \
-    --min-lr '1e-09' --warmup-updates 10000 \
+    --stop-min-lr '1e-09' --warmup-updates 10000 \
     --warmup-init-lr '1e-07' --label-smoothing 0.1 \
     --dropout 0.3 --weight-decay 0.01 \
     --decoder-learned-pos \
@@ -157,7 +157,7 @@ fairseq-train \
 fairseq-train \
     data-bin/wmt14_en_de_distill \
     --save-dir checkpoints \
-    --ddp-backend=no_c10d \
+    --ddp-backend=legacy_ddp \
     --task translation_lev \
     --criterion nat_loss \
     --arch levenshtein_transformer \
@@ -165,7 +165,7 @@ fairseq-train \
     --share-all-embeddings \
     --optimizer adam --adam-betas '(0.9,0.98)' \
     --lr 0.0005 --lr-scheduler inverse_sqrt \
-    --min-lr '1e-09' --warmup-updates 10000 \
+    --stop-min-lr '1e-09' --warmup-updates 10000 \
     --warmup-init-lr '1e-07' --label-smoothing 0.1 \
     --dropout 0.3 --weight-decay 0.01 \
     --decoder-learned-pos \

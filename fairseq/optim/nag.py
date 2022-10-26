@@ -3,12 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from collections.abc import Collection
 from dataclasses import dataclass, field
 from typing import List
 
 import torch
 from fairseq.dataclass import FairseqDataclass
-from omegaconf import II
+from omegaconf import II, DictConfig
 from torch.optim.optimizer import Optimizer, required
 
 from . import FairseqOptimizer, register_optimizer
@@ -19,13 +20,13 @@ class FairseqNAGConfig(FairseqDataclass):
     momentum: float = field(default=0.99, metadata={"help": "momentum factor"})
     weight_decay: float = field(default=0.0, metadata={"help": "weight decay"})
     # TODO common vars in parent class
-    lr: List[float] = II("params.optimization.lr")
+    lr: List[float] = II("optimization.lr")
 
 
 @register_optimizer("nag", dataclass=FairseqNAGConfig)
 class FairseqNAG(FairseqOptimizer):
-    def __init__(self, args, params):
-        super().__init__(args)
+    def __init__(self, cfg: DictConfig, params):
+        super().__init__(cfg)
         self._optimizer = NAG(params, **self.optimizer_config)
 
     @property
@@ -37,9 +38,11 @@ class FairseqNAG(FairseqOptimizer):
         different learning rate.
         """
         return {
-            "lr": self.args.lr[0],
-            "momentum": self.args.momentum,
-            "weight_decay": self.args.weight_decay,
+            "lr": self.cfg.lr[0]
+            if isinstance(self.cfg.lr, Collection)
+            else self.cfg.lr,
+            "momentum": self.cfg.momentum,
+            "weight_decay": self.cfg.weight_decay,
         }
 
 
@@ -59,7 +62,7 @@ class NAG(Optimizer):
     def step(self, closure=None):
         """Performs a single optimization step.
 
-        Arguments:
+        Args:
             closure (callable, optional): A closure that reevaluates the model
                 and returns the loss.
         """
@@ -72,7 +75,7 @@ class NAG(Optimizer):
             momentum = group["momentum"]
             lr = group["lr"]
             lr_old = group.get("lr_old", lr)
-            lr_correct = lr / lr_old
+            lr_correct = lr / lr_old if lr_old > 0 else lr
 
             for p in group["params"]:
                 if p.grad is None:

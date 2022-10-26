@@ -1,4 +1,9 @@
 #!/bin/bash
+# Copyright (c) Facebook, Inc. and its affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
 
 path_2_data=$1  # <path to data> which contains binarized data for each directions
 lang_list=$2  # <path to a file which contains a list of languages separted by new lines>
@@ -20,7 +25,7 @@ fairseq-train "$path_2_data" \
   --lang-pairs "$lang_pairs" \
   --criterion label_smoothed_cross_entropy --label-smoothing 0.2 \
   --optimizer adam --adam-eps 1e-06 --adam-betas '(0.9, 0.98)' \
-  --lr-scheduler inverse_sqrt --lr 3e-05 --min-lr -1 --warmup-updates 2500 --max-update 40000 \
+  --lr-scheduler inverse_sqrt --lr 3e-05 --warmup-updates 2500 --max-update 40000 \
   --dropout 0.3 --attention-dropout 0.1 --weight-decay 0.0 \
   --max-tokens 1024 --update-freq 2 \
   --save-interval 1 --save-interval-updates 5000 --keep-interval-updates 10 --no-epoch-checkpoints \

@@ -11,7 +11,7 @@ from fairseq import options
 from fairseq.data import dictionary
 from fairseq.scoring import bleu
 
-from . import (
+from examples.noisychannel import (
     rerank_generate,
     rerank_options,
     rerank_score_bw,
@@ -27,7 +27,13 @@ def score_target_hypo(
     print("lenpen", lenpen, "weight1", a, "weight2", b, "weight3", c)
     gen_output_lst, bitext1_lst, bitext2_lst, lm_res_lst = load_score_files(args)
     dict = dictionary.Dictionary()
-    scorer = bleu.Scorer(dict.pad(), dict.eos(), dict.unk())
+    scorer = scorer = bleu.Scorer(
+        bleu.BleuConfig(
+            pad=dict.pad(),
+            eos=dict.eos(),
+            unk=dict.unk(),
+        )
+    )
 
     ordered_hypos = {}
     ordered_targets = {}
@@ -289,7 +295,7 @@ def load_score_files(args):
             predictions_bpe_file = args.nbest_list
         gen_output = rerank_utils.BitextOutputFromGen(
             predictions_bpe_file,
-            bpe_symbol=args.remove_bpe,
+            bpe_symbol=args.post_process,
             nbest=using_nbest,
             prefix_len=args.prefix_len,
             target_prefix_frac=args.target_prefix_frac,
@@ -302,7 +308,7 @@ def load_score_files(args):
                 score1_file,
                 args.backwards1,
                 args.right_to_left1,
-                args.remove_bpe,
+                args.post_process,
                 args.prefix_len,
                 args.target_prefix_frac,
                 args.source_prefix_frac,
@@ -316,7 +322,7 @@ def load_score_files(args):
                     score2_file,
                     args.backwards2,
                     args.right_to_left2,
-                    args.remove_bpe,
+                    args.post_process,
                     args.prefix_len,
                     args.target_prefix_frac,
                     args.source_prefix_frac,
@@ -340,7 +346,7 @@ def load_score_files(args):
                 lm_score_file,
                 args.lm_dict,
                 args.prefix_len,
-                args.remove_bpe,
+                args.post_process,
                 args.target_prefix_frac,
             )
         else:

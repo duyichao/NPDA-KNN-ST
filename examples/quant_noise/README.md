@@ -154,7 +154,7 @@ fairseq-train $DATA_DIR \
     --batch-size $MAX_SENTENCES \
     --update-freq $UPDATE_FREQ --max-update $TOTAL_UPDATES \
     --save-dir checkpoint/roberta \
-    --ddp-backend no_c10d --encoder-layerdrop 0.2 \
+    --ddp-backend legacy_ddp --encoder-layerdrop 0.2 \
     --quant-noise-pq 0.2 --quant-noise-pq-block-size 8 --untie-weights-roberta
 ```
 
@@ -189,7 +189,7 @@ fairseq-train /path/to/rte/data/ \
     --max-epoch 10 \
     --find-unused-parameters \
     --best-checkpoint-metric accuracy --maximize-best-checkpoint-metric \
-    --ddp-backend no_c10d \
+    --ddp-backend legacy_ddp \
     --quant-noise-pq 0.2 --quant-noise-pq-block-size 8
 ```
 
@@ -205,14 +205,14 @@ fairseq-train --task language_modeling /path/to/wikitext-103/data \
     --arch transformer_lm_gbw \
     --attention-dropout 0.1 --dropout 0.2 --relu-dropout 0.1 \
     --clip-norm 0.1 --criterion adaptive_loss \
-    --ddp-backend no_c10d \
+    --ddp-backend legacy_ddp \
     --decoder-attention-heads 8 --decoder-embed-dim 1024 --decoder-ffn-embed-dim 4096 --decoder-input-dim 1024 \
     --decoder-layers 16 --decoder-normalize-before --decoder-output-dim 1024 \
-    --lr 0.0001 --lr-period-updates 270000 --lr-scheduler cosine --lr-shrink 0.75 --max-lr 1.0 --t-mult 2.0 \
+    --min-lr 0.0001 --lr-period-updates 270000 --lr-scheduler cosine --lr-shrink 0.75 --lr 1.0 --t-mult 2.0 \
     --max-tokens 3072 --tokens-per-sample 3072 --momentum 0.99 --optimizer nag \
     --sample-break-mode none --update-freq 3 \
     --warmup-init-lr 1e-07 --warmup-updates 16000 \
-    --weight-decay 0 --seed 1 --min-lr 1e-09 \
+    --weight-decay 0 --seed 1 --stop-min-lr 1e-09 \
     --quant-noise-pq 0.05 --quant-noise-pq-block-size 8
 ```
 
@@ -252,7 +252,7 @@ fairseq-train --task sentence_prediction /path/to/data/ \
     --weight-decay 0.1 --optimizer adam --adam-betas "(0.9, 0.98)" --adam-eps 1e-06 \
     --clip-norm 0.0 --lr-scheduler polynomial_decay \
     --fp16 --fp16-init-scale 4 --threshold-loss-scale 1 --fp16-scale-window 128 \
-    --no-progress-bar --skip-invalid-size-inputs-valid-test --ddp-backend no_c10d \
+    --no-progress-bar --skip-invalid-size-inputs-valid-test --ddp-backend legacy_ddp \
     --quantization-config-path /path/to/config/yaml
 ```
 
@@ -266,10 +266,10 @@ fairseq-train --task language_modeling /path/to/wikitext-103/data \
     --attention-dropout 0.1 --dropout 0.2 --relu-dropout 0.1  \
     --bucket-cap-mb 25 --char-embedder-highway-layers 2 --character-embedding-dim 4 \
     --clip-norm 0.1 --criterion adaptive_loss \
-    --ddp-backend no_c10d \
+    --ddp-backend legacy_ddp \
     --decoder-attention-heads 8 --decoder-embed-dim 1024 --decoder-ffn-embed-dim 4096 --decoder-input-dim 1024 --decoder-layers 16 --decoder-normalize-before --decoder-output-dim 1024 \
     --fp16 --keep-last-epochs -1 \
-    --lr 0.0001 --lr-period-updates 270000 --lr-scheduler cosine --lr-shrink 0.75 --max-lr 0.05 --min-lr 1e-09 \
+    --min-lr 0.0001 --lr-period-updates 270000 --lr-scheduler cosine --lr-shrink 0.75 --lr 0.05 --stop-min-lr 1e-09 \
     --max-tokens 2944  --tokens-per-sample 2944\
     --momentum 0.99 --no-epoch-checkpoints --no-progress-bar --optimizer nag --required-batch-size-multiple 8 \
     --sample-break-mode none --t-mult 2.0 --skip-invalid-size-inputs-valid-test \

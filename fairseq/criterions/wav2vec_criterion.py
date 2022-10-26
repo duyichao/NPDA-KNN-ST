@@ -4,35 +4,44 @@
 # LICENSE file in the root directory of this source tree.
 
 import math
+from dataclasses import dataclass, field
+from typing import List, Optional
 
 import torch
 import torch.nn.functional as F
 from fairseq import metrics, utils
 from fairseq.criterions import FairseqCriterion, register_criterion
+from fairseq.dataclass import FairseqDataclass
 from fairseq.logging.meters import safe_round
+from fairseq.utils import is_xla_tensor
 
 
-@register_criterion("wav2vec")
+@dataclass
+class Wav2VecCriterionConfig(FairseqDataclass):
+    infonce: bool = field(
+        default=False,
+        metadata={
+            "help": "if set, uses cross entropy instead of binary cross entropy (i.e. InfoNCE loss)"
+        },
+    )
+    loss_weights: Optional[List[float]] = field(
+        default=None,
+        metadata={"help": "weights for additional loss terms (not first one)"},
+    )
+    log_keys: List[str] = field(
+        default_factory=lambda: [],
+        metadata={"help": "output keys to log"},
+    )
+
+@register_criterion("wav2vec", dataclass=Wav2VecCriterionConfig)
 class Wav2vecCriterion(FairseqCriterion):
     def __init__(self, task, infonce=False, loss_weights=None, log_keys=None):
         super().__init__(task)
         self.infonce = infonce
-        self.loss_weights = None if loss_weights is None else eval(loss_weights)
-        self.log_keys = [] if log_keys is None else eval(log_keys)
+        self.loss_weights = loss_weights
+        self.log_keys = [] if log_keys is None else log_keys
 
-    @staticmethod
-    def add_args(parser):
-        """Add criterion-specific arguments to the parser."""
-        # fmt: off
-        parser.add_argument('--infonce', action='store_true',
-                            help='if set, uses cross entropy instead of binary cross entropy (i.e. InfoNCE loss)')
-        parser.add_argument('--loss-weights', type=str, default=None,
-                            help='weights for additional loss terms (not first one)')
-        parser.add_argument('--log-keys', type=str, default=None,
-                            help='output keys to log')
-        # fmt: on
-
-    def forward(self, model, sample, reduce=True, log_pred=False):
+    def forward(self, model, sample, reduce=True):
         """Compute the loss for the given sample.
 
         Returns a tuple with three elements:
@@ -43,7 +52,9 @@ class Wav2vecCriterion(FairseqCriterion):
         net_output = model(**sample["net_input"])
         logits = model.get_logits(net_output).float()
         target = model.get_targets(sample, net_output)
+        self.xla = is_xla_tensor(logits)
 
+        # XXX: handle weights on xla.
         weights = None
         if hasattr(model, "get_target_weights") and not self.infonce:
             weights = model.get_target_weights(target, net_output)
@@ -52,21 +63,31 @@ class Wav2vecCriterion(FairseqCriterion):
 
         losses = []
 
+        reduction = "none" if ((not reduce) or self.xla) else "sum"
         if self.infonce:
-            loss = F.cross_entropy(
-                logits,
-                target,
-                reduction="sum" if reduce else "none",
-            )
+            loss = F.cross_entropy(logits, target, reduction=reduction)
         else:
             loss = F.binary_cross_entropy_with_logits(
-                logits,
-                target.float(),
-                weights,
-                reduction="sum" if reduce else "none",
+                logits, target.float(), weights, reduction=reduction
             )
 
-        sample_size = target.numel() if self.infonce else target.long().sum().item()
+        if self.xla:
+            # tpu-comment: since dynamic shapes lead to recompilations on xla,
+            # we don't shrink tensors using mask_indices.
+            # Instead, we use mask indices to adjust loss.
+            mi = (
+                sample['net_input']['mask_indices']
+                .transpose(0, 1)  # logits are transposed in `model.get_logits`
+                .reshape(logits.size(0))
+            )
+            loss = (loss * mi).sum() if reduce else (loss * mi)
+
+        if 'sample_size' in sample and self.infonce:
+            sample_size = sample['sample_size']
+        elif 'mask_indices' in sample['net_input']:
+            sample_size = sample['net_input']['mask_indices'].sum()
+        else:
+            sample_size = target.numel() if self.infonce else target.long().sum().item()
         losses.append(loss.detach().clone())
 
         if self.loss_weights is not None:
@@ -86,19 +107,30 @@ class Wav2vecCriterion(FairseqCriterion):
                     losses.append(p)
 
         logging_output = {
-            "loss": loss.item() if reduce else loss,
+            "loss": loss.item() if (reduce and not self.xla) else loss.detach(),
             "ntokens": sample_size,
             "nsentences": sample["id"].numel(),
             "sample_size": sample_size,
         }
 
         for lk in self.log_keys:
-            if lk in net_output:
-                logging_output[lk] = float((net_output[lk]))
+            # Only store "logits" and "target" for computing MAP and MAUC
+            # during validation
+            if lk == "logits":
+                if not self.training:
+                    logging_output["logits"] = logits.cpu().numpy()
+            elif lk == "target":
+                if not self.training:
+                    logging_output["target"] = target.cpu().numpy()
+            elif lk in net_output:
+                value = net_output[lk]
+                if not is_xla_tensor(value):
+                    value = float(value)
+                logging_output[lk] = value
 
         if len(losses) > 1:
             for i, l in enumerate(losses):
-                logging_output[f"loss_{i}"] = l.item()
+                logging_output[f"loss_{i}"] = l.item() if not self.xla else l.detach()
 
         if self.infonce:
             with torch.no_grad():
@@ -109,16 +141,19 @@ class Wav2vecCriterion(FairseqCriterion):
                     assert logits.dim() > 1, logits.shape
                     max = logits.argmax(-1) == 0
                     min = logits.argmin(-1) == 0
-                    both = max & min
-                    corr = max.long().sum().item() - both.long().sum().item()
-                    count = max.numel()
+                    if is_xla_tensor(logits):
+                        max, min = max * mi, min * mi
+                        both = max & min
+                        corr = max.long().sum() - both.long().sum()
+                        count = mi.sum()
+                    else:
+                        both = max & min
+                        corr = max.long().sum().item() - both.long().sum().item()
+                        count = float(max.numel())
 
                 logging_output["correct"] = corr
                 logging_output["count"] = count
 
-        if log_pred:
-            logging_output["logits"] = logits.cpu().numpy()
-            logging_output["target"] = target.cpu().numpy()
         return loss, sample_size, logging_output
 
     @staticmethod
@@ -134,7 +169,7 @@ class Wav2vecCriterion(FairseqCriterion):
         )
 
         metrics.log_scalar(
-            "loss", loss_sum / sample_size / math.log(2), sample_size, round=3
+            "loss", loss_sum / (sample_size or 1) / math.log(2), sample_size, round=3
         )
         metrics.log_scalar("ntokens", ntokens)
         metrics.log_scalar("nsentences", nsentences)
@@ -166,19 +201,23 @@ class Wav2vecCriterion(FairseqCriterion):
 
         for k in logging_outputs[0]:
             if k not in builtin_keys:
-                val = sum(log.get(k, 0) for log in logging_outputs) / len(
-                    logging_outputs
-                )
+                val = sum(log.get(k, 0) for log in logging_outputs)
                 if k.startswith("loss"):
-                    metrics.log_scalar(k, val / sample_size / math.log(2), sample_size)
+                    metrics.log_scalar(
+                        k, val / (sample_size or 1) / math.log(2), sample_size, round=3
+                    )
                 else:
-                    metrics.log_scalar(k, val, round=3)
+                    metrics.log_scalar(k, val / len(logging_outputs), round=3)
 
-    @staticmethod
-    def logging_outputs_can_be_summed() -> bool:
+    # FIXME: revert when gather based xla reduction is implemented
+    #@staticmethod
+    #def logging_outputs_can_be_summed() -> bool:
+    def logging_outputs_can_be_summed(self) -> bool:
         """
         Whether the logging outputs returned by `forward` can be summed
         across workers prior to calling `reduce_metrics`. Setting this
         to True will improves distributed training speed.
         """
-        return False
+        # XXX: Gather based reduction not implemented for xla yet.
+        # So we fall to sum based reduction for xla.
+        return self.xla

@@ -31,21 +31,22 @@ class TransformerEncoderLayer(nn.Module):
 
     def __init__(self, args):
         super().__init__()
+        self.args = args
         self.embed_dim = args.encoder_embed_dim
-        self.quant_noise = getattr(args, "quant_noise_pq", 0)
-        self.quant_noise_block_size = getattr(args, "quant_noise_pq_block_size", 8)
+        self.quant_noise = getattr(args, 'quant_noise_pq', 0)
+        self.quant_noise_block_size = getattr(args, 'quant_noise_pq_block_size', 8) or 8
         self.self_attn = self.build_self_attention(self.embed_dim, args)
         self.self_attn_layer_norm = LayerNorm(self.embed_dim)
         self.dropout_module = FairseqDropout(
             args.dropout, module_name=self.__class__.__name__
         )
         self.activation_fn = utils.get_activation_fn(
-            activation=getattr(args, "activation_fn", "relu")
+            activation=getattr(args, 'activation_fn', 'relu') or "relu"
         )
-        activation_dropout_p = getattr(args, "activation_dropout", 0)
+        activation_dropout_p = getattr(args, "activation_dropout", 0) or 0
         if activation_dropout_p == 0:
             # for backwards compatibility with models that use args.relu_dropout
-            activation_dropout_p = getattr(args, "relu_dropout", 0)
+            activation_dropout_p = getattr(args, "relu_dropout", 0) or 0
         self.activation_dropout_module = FairseqDropout(
             float(activation_dropout_p), module_name=self.__class__.__name__
         )
@@ -102,7 +103,7 @@ class TransformerEncoderLayer(nn.Module):
                     state_dict["{}.{}.{}".format(name, new, m)] = state_dict[k]
                     del state_dict[k]
 
-    def forward(self, x, encoder_padding_mask, attn_mask: Optional[Tensor] = None):
+    def forward(self, x, encoder_padding_mask: Optional[Tensor], attn_mask: Optional[Tensor] = None):
         """
         Args:
             x (Tensor): input to the layer of shape `(seq_len, batch, embed_dim)`
@@ -134,6 +135,7 @@ class TransformerEncoderLayer(nn.Module):
             key=x,
             value=x,
             key_padding_mask=encoder_padding_mask,
+            need_weights=False,
             attn_mask=attn_mask,
         )
         x = self.dropout_module(x)
@@ -144,7 +146,6 @@ class TransformerEncoderLayer(nn.Module):
         residual = x
         if self.normalize_before:
             x = self.final_layer_norm(x)
-
         x = self.activation_fn(self.fc1(x))
         x = self.activation_dropout_module(x)
         x = self.fc2(x)
@@ -197,10 +198,10 @@ class TransformerDecoderLayer(nn.Module):
             if getattr(args, "activation_fn", None) is not None
             else "relu"
         )
-        activation_dropout_p = getattr(args, "activation_dropout", 0)
+        activation_dropout_p = getattr(args, "activation_dropout", 0) or 0
         if activation_dropout_p == 0:
             # for backwards compatibility with models that use args.relu_dropout
-            activation_dropout_p = getattr(args, "relu_dropout", 0)
+            activation_dropout_p = getattr(args, "relu_dropout", 0) or 0
         self.activation_dropout_module = FairseqDropout(
             float(activation_dropout_p), module_name=self.__class__.__name__
         )
@@ -413,11 +414,3 @@ class TransformerDecoderLayer(nn.Module):
 
     def make_generation_fast_(self, need_attn: bool = False, **kwargs):
         self.need_attn = need_attn
-
-
-def Linear(in_features, out_features, bias=True):
-    m = nn.Linear(in_features, out_features, bias)
-    nn.init.xavier_uniform_(m.weight)
-    if bias:
-        nn.init.constant_(m.bias, 0.0)
-    return m

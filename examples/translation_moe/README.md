@@ -15,7 +15,7 @@ The model is trained with online responsibility assignment and shared parameteri
 
 The following command will train a `hMoElp` model with `3` experts:
 ```bash
-fairseq-train --ddp-backend='no_c10d' \
+fairseq-train --ddp-backend='legacy_ddp' \
     data-bin/wmt17_en_de \
     --max-update 100000 \
     --task translation_moe --user-dir examples/translation_moe/translation_moe_src \
@@ -24,7 +24,7 @@ fairseq-train --ddp-backend='no_c10d' \
     --arch transformer_wmt_en_de --share-all-embeddings \
     --optimizer adam --adam-betas '(0.9, 0.98)' --clip-norm 0.0 \
     --lr-scheduler inverse_sqrt --warmup-init-lr 1e-07 --warmup-updates 4000 \
-    --lr 0.0007 --min-lr 1e-09 \
+    --lr 0.0007 \
     --dropout 0.1 --weight-decay 0.0 --criterion cross_entropy \
     --max-tokens 3584
 ```
